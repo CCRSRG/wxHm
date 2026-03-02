@@ -230,3 +230,7 @@ npx wrangler deploy
 如果你觉得这个项目有帮助，请给一个 Star ⭐️！
 
 ![](zsm.jpg)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=cooker/wxHm&type=date&legend=top-left)](https://www.star-history.com/#cooker/wxHm&type=date&legend=top-left)

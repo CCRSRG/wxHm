@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
@@ -12,12 +14,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 微信公众号 API 工具类
+ * 使用 BufferingClientHttpRequestFactory 避免 Transfer-Encoding: chunked，确保正确设置 Content-Length，防止微信返回 412。
  */
 @Component
 public class WeChatApi {
 
     private static final String BASE_URL = "https://api.weixin.qq.com";
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = new RestTemplate(
+            new BufferingClientHttpRequestFactory(new SimpleClientHttpRequestFactory()));
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private record TokenEntry(String token, long expiresAt) {}
@@ -69,8 +73,15 @@ public class WeChatApi {
         }
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+        headers.setContentType(MediaType.parseMediaType("application/json;charset=UTF-8"));
+        String bodyJson;
+        try {
+            bodyJson = objectMapper.writeValueAsString(payload);
+        } catch (Exception e) {
+            System.err.println("序列化模板消息请求失败: " + e.getMessage());
+            return null;
+        }
+        HttpEntity<String> entity = new HttpEntity<>(bodyJson, headers);
         ResponseEntity<String> resp = restTemplate.postForEntity(apiUrl, entity, String.class);
 
         if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
