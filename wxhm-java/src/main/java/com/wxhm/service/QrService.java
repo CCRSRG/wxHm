@@ -54,6 +54,10 @@ public class QrService {
      */
     public String getActiveQr(String groupName) {
         Path groupPath = properties.getGroupPath(groupName);
+        // 防止误操作清理自定义文件目录（uploads/files 目录只用于永久自定义文件）
+        if (groupPath.equals(properties.getFilesDirPath())) {
+            return null;
+        }
         if (!Files.isDirectory(groupPath)) {
             return null;
         }
@@ -155,6 +159,10 @@ public class QrService {
 
     public void deleteGroup(String groupName) throws IOException {
         Path path = properties.getGroupPath(groupName);
+        // 保护自定义文件目录，防止被当作群组误删
+        if (path.equals(properties.getFilesDirPath())) {
+            return;
+        }
         if (Files.exists(path)) {
             deleteRecursively(path);
         }
